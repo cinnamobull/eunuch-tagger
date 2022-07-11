@@ -23,9 +23,9 @@
 
     function injectDynamicItem(item) {
         const uid = item?.modules?.module_author?.mid;
-
+        console.log("uid = " + uid);
         if (uid == 33605910) {
-            item.modules.module_author.name = "33老公";
+            item.modules.module_author.name = "我的老公";
             return;
         }
 
@@ -38,6 +38,7 @@
     function addXHRHooks() {
         // 动态直接通过 Hook XHR 响应完成
         unsafeWindow.xhook.after(function (request, response) {
+            console.log(request.url);
             if (request.url.includes('//api.bilibili.com/x/polymer/web-dynamic/v1/detail')) {
                 if (request.url.includes('timezone_offset')) {
                     // 动态详情页
@@ -69,17 +70,22 @@
         });
     }
 
-    function modifyUserName(replies) {
+    function modifyReplies(replies) {
         replies = replies ?? [];
         for (let i = 0; i < replies.length; i++) {
             const memberData = replies[i]?.member;
             if (!memberData) continue;
+
             if (eunuchList.includes(+memberData.mid)) {
                 memberData.uname = "太监 - " + memberData.uname;
                 memberData.avatar = eunuchAvatar;
             }
             if (memberData.mid == 33605910) {
-                memberData.uname = "33老公";
+                memberData.uname = "我的老公";
+            }
+            const subreplies = replies[i]?.replies;
+            if (subreplies) {
+                modifyReplies(subreplies);
             }
         }
     }
@@ -93,7 +99,8 @@
                             const callbackName = node.src.match(/callback=(.*?)&/)[1];
                             const originFunc = unsafeWindow[callbackName];
                             unsafeWindow[callbackName] = (value) => {
-                                modifyUserName(value.data.replies);
+                                modifyReplies(value.data.replies);
+                                modifyReplies([value.data.top?.upper]);
                                 originFunc(value);
                             }
                         }
